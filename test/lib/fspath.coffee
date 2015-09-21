@@ -115,8 +115,8 @@ describe 'test Path', ->
       './':true
       './lib':true
       './lib/index.coffee':true
-      '../fspath':true
-      '../fspath/package.json':true
+      '../node-fspath':true
+      '../node-fspath/package.json':true
       './fake':false
       './fake.file':false
     }
@@ -136,8 +136,8 @@ describe 'test Path', ->
       './':false
       './lib':false
       './lib/index.coffee':true
-      '../fspath':false
-      '../fspath/package.json':true
+      '../node-fspath':false
+      '../node-fspath/package.json':true
       './fake':false
       './fake.file':false
     }
@@ -158,8 +158,8 @@ describe 'test Path', ->
       './':true
       './lib':true
       './lib/index.coffee':false
-      '../fspath':true
-      '../fspath/package.json':false
+      '../node-fspath':true
+      '../node-fspath/package.json':false
       './fake':false
       './fake.file':false
     }
