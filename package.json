@@ -1,0 +1,26 @@
+{
+  "name": "fspath",
+  "version": "0.12.0",
+  "description": "Immutable Path combining path and fs operations",
+  "main": "lib",
+  "author": "Eli Doran <eli+npm@elidoran.com>",
+  "license": "MIT",
+  "scripts": {
+    "compile": "coffee --bare --compile lib",
+    "clean": "rm -rf lib/*.js",
+    "prepublish": "coffee --bare --compile lib",
+    "postpublish": "rm -rf lib/*.js",
+    "test": "mocha --compilers coffee:coffee-script/register --reporter spec --bail --check-leaks test/lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/elidoran/node-fspath.git"
+  },
+  "bugs": "http://github.com/elidoran/node-fspath/issues",
+  "devDependencies": {
+    "coffee-script": "^1.10.0",
+    "mocha": "^2.3.3",
+    "strung": "^1.0.3"
+  },
+  "dependencies": {}
+}
