@@ -4,7 +4,7 @@
 [![npm version](https://badge.fury.io/js/fspath.svg)](http://badge.fury.io/js/fspath)
 
 
-Path object replaces using strings for paths. It provides some functionality from both `path` and `fs` core modules.
+Immutable Path object replaces using strings for paths. It provides some functionality from both `path` and `fs` core modules.
 
 Path avoids doing any internal work, except storing the string and its parts split by the path separator, until a function is called requesting the information.
 
