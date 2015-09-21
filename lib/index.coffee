@@ -141,14 +141,17 @@ module.exports = class Path
     fn = if done? then fs.appendFile else fs.appendFileSync
     fn @path, data, options, done
 
-  # stream: the stream to pipe the file's content to
+  # stream: the stream to pipe the file's content to, or a path (call path.writer())
   # options: options for creating the reader and adding events to the reader
   # options.reader: the options to pass to reader()
+  # options.writer: the options to pass to writer()
   # options.events: the event/listener pairs to register with the reader
-  pipe: (stream, options) ->
+  pipe: (pathOrStream, options) ->
     reader = @reader options?.reader
-    reader.on event, listener for event,listener of options?.events
-    return reader.pipe stream
+    reader.on event, listener for event,listener of options?.events?.reader
+    pathOrStream = pathOrStream.writer options?.writer if pathOrStream instanceof Path
+    pathOrStream.on event, listener for event,listener of options?.events?.writer
+    return reader.pipe pathOrStream
 
   list: (options, done) ->
     @_mustExist 'to list directory'
