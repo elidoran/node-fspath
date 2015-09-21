@@ -6,9 +6,22 @@
 
 Path object replaces using strings for paths. It provides some functionality from both `path` and `fs` core modules.
 
-Although, using modules `fs` and `path` on strings gets the job done with focused modules, it can become tedious to manage the path strings manually, using the `path` module's *join* and *resolve*, and using `fs` to manage the streams.
+Path avoids doing any internal work, except storing the string and its parts split by the path separator, until a function is called requesting the information.
 
-This module combines those operations onto a single object: `Path`
+Some of the helpful capabilities:
+
+1. all the `path` module's functions
+2. `isAbsolute` and `isRelative`
+3. fs.stats related information
+4. fs.{write|append|read}File[Sync]
+5. create read/write streams
+6. piping between paths
+7. listing directory contents
+8. path startsWith, endsWith, equals
+9. subpath
+10. and much more
+
+Many of Path's functions will operate asynchronously when a callback is provided; otherwise they operate synchronously.
 
 <table of contents, like cosmos-browserify>
 
@@ -20,7 +33,7 @@ Note: Although this document is incomplete the library is fully functional and t
 npm install paths --save
 ```
 
-## Usage: Basic
+## Examples
 
 ```coffeescript
 # get the class
@@ -40,7 +53,25 @@ siblingDir = childDir.to '../sibling'
 paths = dir.list()
 # OR: dir.list (error, result) -> paths = result.paths
 
+file = dir.to 'some-file.txt'
+file.write 'some data'
+file.append '\nmore data'
+# OR:
+#  file.write 'some data', (error) ->
+#    if error? then # do something when error exists
+#    file.append '\nmore data', (error) -> # do something when error exists
 
+content = file.read()
+console.log content # 'some data\nmore data'
+
+source = dir.to 'a-source-file.txt'
+target = dir.to 'a-target-file.txt'
+source.pipe target  # calls reader() on source and writer() on target and pipes them
+# options object accepts options for both reader/writer and for adding events
+
+# listen for the finish event:
+source.pipe target, events:writer:finish: -> # do something when target's writer stream is finished
+# or wrap that options object down onto separate lines if you like...
 ```
 
 ## Immutable Path
