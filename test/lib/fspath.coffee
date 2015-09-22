@@ -283,7 +283,7 @@ describe 'test Path', ->
     for path in pathArray
       do (path) ->
         it 'with ' + path, ->
-          expected = if path? then corepath.normalize path else corepath.normalize process.cwd()
+          expected = if path? then corepath.normalize path else corepath.normalize '.'
           assert.equal new Path(path).normalize().path, expected
 
 
@@ -445,7 +445,7 @@ describe 'test Path', ->
         it 'with [' + path + '] should match corepath.filename', ->
           expected =
             if path? then corepath.basename(path, corepath.extname path)
-            else corepath.basename process.cwd()
+            else corepath.basename '.'
           assert.equal new Path(path).filename(), expected
           # test a second time because value is cached
           assert.equal new Path(path).filename(), expected, 'cached value should be the same'
@@ -458,7 +458,7 @@ describe 'test Path', ->
         it 'with [' + path + '] should match corepath.basename', ->
           expected =
             if path? then corepath.basename path
-            else corepath.basename process.cwd()
+            else corepath.basename '.'
           assert.equal new Path(path).basename(), expected
           # test a second time because value is cached
           assert.equal new Path(path).basename(), expected, 'cached value should be the same'
@@ -470,7 +470,7 @@ describe 'test Path', ->
         it 'with [' + path + '] should match corepath.extname', ->
           expected =
             if path? then corepath.extname path
-            else corepath.extname process.cwd()
+            else corepath.extname '.'
           assert.equal new Path(path).extname(), expected
           # test a second time because value is cached
           assert.equal new Path(path).extname(), expected, 'cached value should be the same'
@@ -480,7 +480,7 @@ describe 'test Path', ->
     for path in pathArray
       do (path) ->
         it 'with [' + path + '] should match corepath.dirname', ->
-          expected = corepath.basename corepath.dirname if path? then path else process.cwd()
+          expected = corepath.basename corepath.dirname if path? then path else '.'
           actual = new Path(path).dirname()
           assert.equal actual, expected
           # test a second time because value is cached

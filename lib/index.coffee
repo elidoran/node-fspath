@@ -20,8 +20,8 @@ module.exports = class Path
       else
         throw new Error 'Path requires either string or array as `path` to constructor'
     else
-      @path = process.cwd()
-      @parts = @path.split corepath.sep
+      @path = '.'
+      @parts = [ '.' ]
 
     @isAbsolute = hasRoot.test @path
     @isRelative = not @isAbsolute
@@ -166,11 +166,11 @@ module.exports = class Path
     #       instead of an array?
 
     if done?
-      fs.readdir @path, (error, array) ->
+      fs.readdir @path, (error, array) =>
         if error? then return done error
         paths = []
         for string in array when not acceptString? or acceptString string
-          path = new Path string
+          path = @to string
           if not acceptPath? or acceptPath path
             paths.push path
             each? path
@@ -179,7 +179,7 @@ module.exports = class Path
       array = fs.readdirSync @path
       paths = []
       for string in array when not acceptString? or acceptString string
-        path = new Path string
+        path = @to string
         if not acceptPath? or acceptPath path
           paths.push path
           each? path
