@@ -50,7 +50,7 @@ childDir = path.to 'child'
 
 siblingDir = childDir.to '../sibling'
 
-paths = dir.list()
+{paths} = dir.list()
 # OR: dir.list (error, result) -> paths = result.paths
 
 file = dir.to 'some-file.txt'
