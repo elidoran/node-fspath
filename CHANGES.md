@@ -1,4 +1,10 @@
 
+0.13.0 - Released 2015/09/24
+
+1. counts rejected strings and paths
+2. each passes `path:path` instead of `path` to maintain result object pattern
+3. test error messages uses `path.path` to get the string directly
+
 0.12.3 - Released 2015/09/22
 
 1. fixed undefined path to be '.' instead of process.cwd() so it's relative
