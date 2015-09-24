@@ -156,34 +156,36 @@ module.exports = class Path
   list: (options, done) ->
     @_mustExist 'to list directory'
     {options, done} = @_optionsAndDone options, done
-    acceptString = options?.acceptString
-    acceptPath   = options?.acceptPath
-    each   = options?.each
-    done  ?= options?.all
-
-    # TODO: only store up array of Path instances if there's an `all` listener ?
+    done ?= options?.all
     # TODO: allow a `returnType` option which has us store result in an object
     #       instead of an array?
-
     if done?
       fs.readdir @path, (error, array) =>
         if error? then return done error
-        paths = []
-        for string in array when not acceptString? or acceptString string
-          path = @to string
-          if not acceptPath? or acceptPath path
-            paths.push path
-            each? path
-        done? undefined, paths:paths
+        done? undefined, @_processList options, done, array
     else
       array = fs.readdirSync @path
-      paths = []
-      for string in array when not acceptString? or acceptString string
+      @_processList options, done, array
+
+  _processList: (options, done, array) ->
+    acceptString = options?.acceptString
+    acceptPath   = options?.acceptPath
+    each   = options?.each
+    paths = []
+    rejectedStrings = rejectedPaths = 0
+
+    for string in array
+      if not acceptString? or acceptString string
         path = @to string
         if not acceptPath? or acceptPath path
           paths.push path
-          each? path
-      return paths:paths
+          each? path:path
+        else
+          rejectedPaths++
+      else
+        rejectedStrings++
+
+    return paths:paths, rejected:{strings:rejectedStrings, paths:rejectedPaths}
 
   files: (options, done) ->
     {options, done} = @_optionsAndDone options, done
