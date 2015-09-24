@@ -1,6 +1,6 @@
 {
   "name": "fspath",
-  "version": "0.12.3",
+  "version": "0.13.0",
   "description": "Immutable Path combining path and fs operations",
   "main": "lib",
   "author": "Eli Doran <eli+npm@elidoran.com>",
