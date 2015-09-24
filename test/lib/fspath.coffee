@@ -57,7 +57,6 @@ describe 'test Path', ->
   rootDirs = [ '.git', 'lib', 'test', 'node_modules' ]
   rootPaths = [].concat(rootDirs).concat(rootFiles)
 
-
   # path.path
   describe 'constructor', ->
 
@@ -903,7 +902,7 @@ describe 'test Path', ->
           path.list (error, result) ->
             if error? then return done error
             for path in result.paths
-              assert (path.path in rootPaths), 'results shouldnt have |' + path + '|'
+              assert (path.path in rootPaths), 'results shouldnt have |' + path.path + '|'
             done()
 
       describe 'with only `done` option', ->
@@ -913,7 +912,7 @@ describe 'test Path', ->
           path.list done:(error, result) ->
             if error? then return done error
             for path in result.paths
-              assert (path.path in rootPaths), 'results shouldnt have |' + path + '|'
+              assert (path.path in rootPaths), 'results shouldnt have |' + path.path + '|'
             done()
 
       describe 'with only `all` option', ->
@@ -923,7 +922,7 @@ describe 'test Path', ->
           path.list all:(error, result) ->
             if error? then return done error
             for path in result.paths
-              assert (path.path in rootPaths), 'results shouldnt have |' + path + '|'
+              assert (path.path in rootPaths), 'results shouldnt have |' + path.path + '|'
             done()
 
       describe 'with `each` and `done` option', ->
@@ -931,12 +930,12 @@ describe 'test Path', ->
         it 'should list all the project root paths', (done) ->
           path = new Path
           path.list
-            each:(path) ->
-              assert (path.path in rootPaths), 'each shouldnt receive : |' + path + '|'
+            each:(result) ->
+              assert (result.path.path in rootPaths), 'each shouldnt receive : |' + result.path.path + '|'
             done: (error, result) ->
               if error? then return done error
               for path in result.paths
-                assert (path.path in rootPaths), 'results shouldnt have |' + path + '|'
+                assert (path.path in rootPaths), 'results shouldnt have |' + path.path + '|'
               done()
 
 
@@ -949,7 +948,7 @@ describe 'test Path', ->
             done:(error, result) ->
               if error? then return done error
               for path in result.paths
-                assert (path.path in rootPaths), 'results shouldnt have |' + path + '|'
+                assert (path.path in rootPaths), 'results shouldnt have |' + path.path + '|'
               done()
 
       describe 'with `accept` \'lib\' and `done` option', ->
@@ -973,7 +972,7 @@ describe 'test Path', ->
           path = new Path
           result = path.list()
           for path in result.paths
-            assert (path.path in rootPaths), 'results shouldnt have |' + path + '|'
+            assert (path.path in rootPaths), 'results shouldnt have |' + path.path + '|'
 
       describe 'with only `accept` option', ->
 
@@ -981,7 +980,7 @@ describe 'test Path', ->
           path = new Path
           result = path.list accept:-> true
           for path in result.paths
-            assert (path.path in rootPaths), 'results shouldnt have |' + path + '|'
+            assert (path.path in rootPaths), 'results shouldnt have |' + path.path + '|'
 
         it 'accept \'lib\' should only list lib', ->
           path = new Path
@@ -996,9 +995,9 @@ describe 'test Path', ->
           path = new Path
           result = path.list each:(path) -> each[path.path] = true
           for path in result.paths
-            assert (path.path in rootPaths), 'results shouldnt have |' + path + '|'
+            assert (path.path in rootPaths), 'results shouldnt have |' + path.path + '|'
           for path in rootPaths
-            assert each[path]?, 'each should have received path: |' + path + '|'
+            assert each[path]?, 'each should have received path: |' + path.path + '|'
 
 
   # path.files
@@ -1008,7 +1007,7 @@ describe 'test Path', ->
       path.files (error, result) ->
         if error? then return done error
         for path in result.paths
-          assert (path.path in rootFiles), 'results shouldnt have |' + path + '|'
+          assert (path.path in rootFiles), 'results shouldnt have |' + path.path + '|'
         done()
 
   describe 'sync files', ->
@@ -1016,7 +1015,7 @@ describe 'test Path', ->
       path = new Path
       result = path.files()
       for path in result.paths
-        assert (path.path in rootFiles), 'results shouldnt have |' + path + '|'
+        assert (path.path in rootFiles), 'results shouldnt have |' + path.path + '|'
 
 
   # path.dirs
@@ -1026,7 +1025,7 @@ describe 'test Path', ->
       path.dirs (error, result) ->
         if error? then return done error
         for path in result.paths
-          assert (path.path in rootDirs), 'results shouldnt have |' + path + '|'
+          assert (path.path in rootDirs), 'results shouldnt have |' + path.path + '|'
         done()
 
   describe 'sync dirs', ->
@@ -1034,7 +1033,7 @@ describe 'test Path', ->
       path = new Path
       result = path.dirs()
       for path in result.paths
-        assert (path.path in rootDirs), 'results shouldnt have |' + path + '|'
+        assert (path.path in rootDirs), 'results shouldnt have |' + path.path + '|'
 
   # path.reset
   describe 'reset', ->
