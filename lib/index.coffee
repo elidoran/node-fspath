@@ -33,7 +33,11 @@ class Path
 
   stats: (done) ->
     if done?
-      fs.stat @path, (error, stats) => @_stats = stats ; done error, stats
+      fs.stat @path, (error, stats) =>
+        @_stats = stats
+        # get rid of error if it's a 'path doesnt exist' error
+        if error?.code is 'ENOENT' then error = null
+        done error, stats
     else
       try
         delete @_stats
