@@ -10,7 +10,13 @@
     "clean": "rm -rf lib/*.js",
     "prepublish": "coffee --bare --compile lib",
     "postpublish": "rm -rf lib/*.js",
-    "test": "mocha --compilers coffee:coffee-script/register --reporter spec --bail --check-leaks test/lib"
+    "testrun": "mocha --compilers coffee:coffee-script/register --reporter spec --bail --check-leaks test/lib",
+    "test010": "nave use 0.10 npm run testrun",
+    "test012": "nave use 0.12 npm run testrun",
+    "test4": "nave use 4.2 npm run testrun",
+    "test5": "nave use 5.0 npm run testrun",
+    "test-all": "npm run test010 && npm run test012 && npm run test4 && npm run test5",
+    "test": "if [ -e $TRAVIS ]; then npm run test-all; else npm run testrun; fi"
   },
   "repository": {
     "type": "git",
@@ -20,7 +26,8 @@
   "devDependencies": {
     "coffee-script": "^1.10.0",
     "mocha": "^2.3.3",
-    "strung": "^1.0.3"
+    "nave": "^0.5.3",
+    "strung": "^1.0.4"
   },
   "dependencies": {}
 }
