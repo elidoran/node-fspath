@@ -3,6 +3,8 @@
 1. exported builder function instead of class (which matches README...)
 2. removed unnecessary `done` param from constructor
 3. change README to call builder function `buildPath`
+4. added nave module and testing on node versions 0.12 and 4.2
+5. updated travis ci to test those versions too
 
 0.13.0 - Released 2015/09/24
 
