@@ -1,3 +1,8 @@
+0.14.0 - Released 2015/11/07
+
+1. exported builder function instead of class (which matches README...)
+2. removed unnecessary `done` param from constructor
+3. change README to call builder function `buildPath`
 
 0.13.0 - Released 2015/09/24
 
