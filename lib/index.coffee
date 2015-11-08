@@ -7,8 +7,8 @@ hasRoot = /// ^(
   | \\         # no drive spec, but, is absolute from current drive
 ) ///
 
-module.exports = class Path
-  constructor: (path, done) ->
+class Path
+  constructor: (path) ->
     @_the = {}
     if path?
       if 'string' is typeof path
@@ -233,3 +233,13 @@ module.exports = class Path
   subpath: (start, end) -> new Path (if @path is '/' then '' else @parts[start...end])
 
   part: (index) -> @parts[index]
+
+# Use these ways:
+#  1a. {Path} = require 'fspath'
+#  1b. Path = require('fspath').Path
+#      path = new Path 'some/path'
+#  2. buildPath = require 'fspath'
+#     path      = buildPath 'some/path'
+#  3. path = require('fspath') 'some/path'
+module.exports = (path) -> new Path path
+module.exports.Path = Path
