@@ -124,7 +124,9 @@ class Path
 
   reader: (options, done) ->
     @_mustExist 'to read from it'
-    @_createStream options, done, (path, options) ->
+    @_createStream options, done, (path, options = {}) ->
+      # passing `null` for options errors in node 0.12 and 4+.
+      # so, we'll ensure it's an object in the params
       fs.createReadStream path, options
 
   writer: (options, done) ->
