@@ -37,11 +37,11 @@ npm install paths --save
 
 ```coffeescript
 # get the class
-Path = require 'fspath'
+buildPath = require 'fspath'
 
-dir = Path()          # creates a path to the current working directory
+dir = buildPath()          # creates a path to the current working directory
 
-dir = Path 'some/app' # creates a path to specified relative path
+dir = buildPath 'some/app' # creates a path to specified relative path
 
 parentDir = dir.parent()
 # OR: parentDir = dir.to '..'
