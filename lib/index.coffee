@@ -39,7 +39,9 @@ class Path
         delete @_stats
         @_stats = fs.statSync @path
       catch error
-        if error.errno is 34 then return
+        # errno is 34 in node 0.10.*
+        # errno is -2 in node 0.12.* and 4.* ... so, use 'code'
+        if error.code is 'ENOENT' then return
         else throw error
 
   refresh: (done) ->
