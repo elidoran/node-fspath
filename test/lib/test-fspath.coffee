@@ -5,6 +5,14 @@ strung   = require 'strung'
 slash    = corepath.sep
 buildPath= require '../../lib'
 
+dirName = process.cwd().split(slash).pop()
+backToHere = '../' + dirName
+backToPackage = '../' + dirName + '/package.json'
+
+isWindows = process.platform is 'win32'
+windows = (value) -> if isWindows then value else not value
+
+
 # lean path ops:
 #  1. avoid as much work as possible
 #  2. don't do anything in constructor we don't have to
@@ -110,17 +118,17 @@ describe 'test Path', ->
 
   # path.isReal
   describe 'isReal', ->
-    for string,result of {
-      '.':true
-      './':true
-      './lib':true
-      './lib/index.coffee':true
-      '../node-fspath':true
-      '../node-fspath/package.json':true
-      './fake':false
-      './fake.file':false
-    }
-      do (string,result) ->
+    for pair in [
+      ['.', true]
+      ['./', true]
+      ['./lib', true]
+      ['./lib/index.coffee', true]
+      [backToHere, true]
+      [backToPackage, true]
+      ['./fake', false]
+      ['./fake.file', false]
+    ]
+      do (string = pair[0], result = pair[1]) ->
         it 'with [' + string + '] should return [' + result + ']', (done) ->
           path = buildPath string
           assert.equal path.isReal(), result
@@ -131,17 +139,17 @@ describe 'test Path', ->
 
   # path.isFile
   describe 'isFile', ->
-    for string,result of {
-      '.':false
-      './':false
-      './lib':false
-      './lib/index.coffee':true
-      '../node-fspath':false
-      '../node-fspath/package.json':true
-      './fake':false
-      './fake.file':false
-    }
-      do (string,result) ->
+    for pair in [
+      ['.', false]
+      ['./', false]
+      ['./lib', false]
+      ['./lib/index.coffee', true]
+      [backToHere, false]
+      [backToPackage, true]
+      ['./fake', false]
+      ['./fake.file', false]
+    ]
+      do (string = pair[0], result = pair[1]) ->
         it 'with [' + string + '] should return [' + result + ']', (done) ->
           path = buildPath string
           assert.equal path.isFile(), result
@@ -153,17 +161,17 @@ describe 'test Path', ->
 
   # path.isDir
   describe 'isDir', ->
-    for string,result of {
-      '.':true
-      './':true
-      './lib':true
-      './lib/index.coffee':false
-      '../node-fspath':true
-      '../node-fspath/package.json':false
-      './fake':false
-      './fake.file':false
-    }
-      do (string,result) ->
+    for pair in [
+      ['.', true]
+      ['./', true]
+      ['./lib', true]
+      ['./lib/index.coffee', false]
+      [backToHere, true]
+      [backToPackage, false]
+      ['./fake', false]
+      ['./fake.file', false]
+    ]
+      do (string = pair[0], result = pair[1]) ->
         it 'with [' + string + '] should return [' + result + ']', (done) ->
           path = buildPath string
           assert.equal path.isDir(), result
@@ -200,14 +208,15 @@ describe 'test Path', ->
       '/path/more/':false
       '/./path':false
       '/./path/':false
-      '\\':false
-      'C:':false
-      'C:\\':false
-      'C:\\some\\path':false
+      '\\': windows false
+      'C:': windows false
+      'C:\\': windows false
+      'C:\\some\\path': windows false
     }
       do (path,result) ->
         it 'with |' + path + '| should return |' + result + '|', ->
           assert.equal buildPath(path).isRelative, result
+
 
   # path.isAbsolute
   describe 'isAbsolute', ->
@@ -236,14 +245,15 @@ describe 'test Path', ->
       '/path/more/':true
       '/./path':true
       '/./path/':true
-      '\\':true
-      'C:':true
-      'C:\\':true
-      'C:\\some\\path':true
+      '\\': windows true
+      'C:': windows true
+      'C:\\': windows true
+      'C:\\some\\path': windows true
     }
       do (path,result) ->
         it 'with [' + path + '] should return [' + result + ']', ->
           assert.equal buildPath(path).isAbsolute, result
+
 
   # path.isCanonical
   describe 'isCanonical', ->
@@ -276,6 +286,7 @@ describe 'test Path', ->
       do (path,result) ->
         it 'with [' + path + '] should return [' + result + ']', ->
           assert.equal buildPath(path).isCanonical(), result
+
 
   # path.normalize
   describe 'normalize', ->
@@ -462,6 +473,7 @@ describe 'test Path', ->
           # test a second time because value is cached
           assert.equal buildPath(path).basename(), expected, 'cached value should be the same'
 
+
   # path.extname # -> alias of path.ext ?
   describe 'extname', ->
     for path in pathArray
@@ -484,6 +496,7 @@ describe 'test Path', ->
           assert.equal actual, expected
           # test a second time because value is cached
           assert.equal actual, expected, 'cached value should be the same'
+
 
   # path.up(#)
   describe 'up', ->
@@ -545,6 +558,7 @@ describe 'test Path', ->
           expected = corepath.join path, joins...
           assert.equal buildPath(path).up(count).path, expected
 
+
   # path.to
   describe 'to', ->
     for path,to of {
@@ -576,6 +590,7 @@ describe 'test Path', ->
       do (path,to) ->
         it 'with [' + path + '] to ' + to, ->
           assert.equal buildPath(path).to(to), corepath.join path, to
+
 
   # path.subpath
   describe 'subpath', ->
@@ -776,9 +791,10 @@ describe 'test Path', ->
       assert.equal target.string, 'file.txt\nsome test file\n'
       done()
     path = buildPath 'test/helpers/file.txt'
-    path.reader (error, reader) ->
+    path.reader done: (error, reader) ->
       if error? then return done error
       reader.pipe target
+
 
   describe 'sync reader', -> it 'should read file \'file.txt\'', (done) ->
     target = strung()
@@ -821,7 +837,7 @@ describe 'test Path', ->
 
   describe 'async read', -> it 'should read file \'file.txt\'', (done) ->
     path = buildPath 'test/helpers/file.txt'
-    path.read {}, (error, text) ->
+    path.read done: (error, text) ->
       if error? then return done error
       assert.equal text, 'file.txt\nsome test file\n'
       done()
@@ -838,16 +854,24 @@ describe 'test Path', ->
     assert.equal text, testContent
 
   describe 'async write', -> it 'should write file \'path.async.write.txt\'', (done) ->
+
     testFile = 'test/output/path.async.write.txt'
     testContent = 'output by path.write test'
     path = buildPath testFile
-    path.write testContent, {}, (error) ->
+    path.write testContent, done: (error) ->
+
       if error? then return done error
+
       fs.readFile testFile, encoding:'utf8', (error, text) ->
+
         if error? then return done error
+
         fs.unlink testFile, (error) ->
+
           if error? then return done error
+
           assert.equal text, testContent
+
           done()
 
 
@@ -869,7 +893,7 @@ describe 'test Path', ->
     testPreexisting = 'async append\n'
     testResult  = testPreexisting + testContent
     path = buildPath testFile
-    path.append testContent, {}, (error) ->
+    path.append testContent, done: (error) ->
       if error? then return done error
       fs.readFile testFile, encoding:'utf8', (error, text) ->
         if error? then return done error
@@ -895,31 +919,11 @@ describe 'test Path', ->
 
     describe 'async', ->
 
-      describe 'with only done callback', ->
-
-        it 'should list all the project root paths', (done) ->
-          path = buildPath()
-          path.list (error, result) ->
-            if error? then return done error
-            for path in result.paths
-              assert (path.path in rootPaths), 'results shouldnt have |' + path.path + '|'
-            done()
-
       describe 'with only `done` option', ->
 
         it 'should list all the project root paths', (done) ->
           path = buildPath()
-          path.list done:(error, result) ->
-            if error? then return done error
-            for path in result.paths
-              assert (path.path in rootPaths), 'results shouldnt have |' + path.path + '|'
-            done()
-
-      describe 'with only `all` option', ->
-
-        it 'should list all the project root paths', (done) ->
-          path = buildPath()
-          path.list all:(error, result) ->
+          path.list done: (error, result) ->
             if error? then return done error
             for path in result.paths
               assert (path.path in rootPaths), 'results shouldnt have |' + path.path + '|'
@@ -930,7 +934,7 @@ describe 'test Path', ->
         it 'should list all the project root paths', (done) ->
           path = buildPath()
           path.list
-            each:(result) ->
+            each: (result) ->
               assert (result.path.path in rootPaths), 'each shouldnt receive : |' + result.path.path + '|'
             done: (error, result) ->
               if error? then return done error
@@ -945,7 +949,7 @@ describe 'test Path', ->
           path = buildPath()
           path.list
             acceptString: -> true
-            done:(error, result) ->
+            done: (error, result) ->
               if error? then return done error
               for path in result.paths
                 assert (path.path in rootPaths), 'results shouldnt have |' + path.path + '|'
@@ -957,7 +961,7 @@ describe 'test Path', ->
           path = buildPath()
           path.list
             acceptString: (path) -> path is 'lib'
-            done:(error, result) ->
+            done: (error, result) ->
               if error? then return done error
               assert.equal result?.paths?.length, 1,
                 'result should only contain \'lib\' path'
@@ -1004,7 +1008,7 @@ describe 'test Path', ->
   describe 'async files', ->
     it 'should list all files in project root', (done) ->
       path = buildPath()
-      path.files (error, result) ->
+      path.files done: (error, result) ->
         if error? then return done error
         for path in result.paths
           assert (path.path in rootFiles), 'results shouldnt have |' + path.path + '|'
@@ -1022,7 +1026,7 @@ describe 'test Path', ->
   describe 'async dirs', ->
     it 'should list all dirs in project root', (done) ->
       path = buildPath()
-      path.dirs (error, result) ->
+      path.dirs done: (error, result) ->
         if error? then return done error
         for path in result.paths
           assert (path.path in rootDirs), 'results shouldnt have |' + path.path + '|'
