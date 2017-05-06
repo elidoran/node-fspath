@@ -784,16 +784,29 @@ describe 'test Path', ->
 
 
   # path.reader
-  describe 'async reader', -> it 'should read file \'file.txt\'', (done) ->
-    target = strung()
-    target.on 'error', done
-    target.on 'finish', ->
-      assert.equal target.string, 'file.txt\nsome test file\n'
-      done()
-    path = buildPath 'test/helpers/file.txt'
-    path.reader done: (error, reader) ->
-      if error? then return done error
-      reader.pipe target
+  describe 'async reader should read file \'file.txt\'', ->
+
+    it 'with done option', (done) ->
+      target = strung()
+      target.on 'error', done
+      target.on 'finish', ->
+        assert.equal target.string, 'file.txt\nsome test file\n'
+        done()
+      path = buildPath 'test/helpers/file.txt'
+      path.reader done: (error, reader) ->
+        if error? then return done error
+        reader.pipe target
+
+    it 'with done callback', (done) ->
+      target = strung()
+      target.on 'error', done
+      target.on 'finish', ->
+        assert.equal target.string, 'file.txt\nsome test file\n'
+        done()
+      path = buildPath 'test/helpers/file.txt'
+      path.reader (error, reader) ->
+        if error? then return done error
+        reader.pipe target
 
 
   describe 'sync reader', -> it 'should read file \'file.txt\'', (done) ->
@@ -809,6 +822,49 @@ describe 'test Path', ->
 
 
   # path.writer
+  describe 'async writer should write file \'path.writer/.txt\'', ->
+
+    it 'with done option', (done) ->
+      testFile = 'test/helpers/path.writer.txt'
+      pretext = 'this line was output by writer.write\n'
+      testContent = 'output by path.write test'
+      source = strung testContent
+      path = buildPath testFile
+      writer = path.writer done: (error, writer) ->
+        if error? then return done error
+        writer.on 'error', done
+        writer.on 'finish', ->
+          # test content of file... delete file
+          fs.readFile testFile, 'utf8', (error, text) ->
+            if error? then return done error
+            fs.unlink testFile, (error) ->
+              if error? then return done error
+              assert.equal pretext+testContent, text
+              done()
+        writer.write pretext, 'utf8'
+        source.pipe writer
+
+    it 'with done callback', (done) ->
+      testFile = 'test/helpers/path.writer.txt'
+      pretext = 'this line was output by writer.write\n'
+      testContent = 'output by path.write test'
+      source = strung testContent
+      path = buildPath testFile
+      writer = path.writer (error, writer) ->
+        if error? then return done error
+        writer.on 'error', done
+        writer.on 'finish', ->
+          # test content of file... delete file
+          fs.readFile testFile, 'utf8', (error, text) ->
+            if error? then return done error
+            fs.unlink testFile, (error) ->
+              if error? then return done error
+              assert.equal pretext+testContent, text
+              done()
+        writer.write pretext, 'utf8'
+        source.pipe writer
+
+
   describe 'sync writer', -> it 'should write file \'path.writer/.txt\'', (done) ->
     testFile = 'test/helpers/path.writer.txt'
     pretext = 'this line was output by writer.write\n'
@@ -835,12 +891,21 @@ describe 'test Path', ->
     text = path.read()
     assert.equal text, 'file.txt\nsome test file\n'
 
-  describe 'async read', -> it 'should read file \'file.txt\'', (done) ->
-    path = buildPath 'test/helpers/file.txt'
-    path.read done: (error, text) ->
-      if error? then return done error
-      assert.equal text, 'file.txt\nsome test file\n'
-      done()
+  describe 'async read should read file \'file.txt\'', ->
+
+    it 'with done option', (done) ->
+      path = buildPath 'test/helpers/file.txt'
+      path.read done: (error, text) ->
+        if error? then return done error
+        assert.equal text, 'file.txt\nsome test file\n'
+        done()
+
+    it 'with done callback', (done) ->
+      path = buildPath 'test/helpers/file.txt'
+      path.read (error, text) ->
+        if error? then return done error
+        assert.equal text, 'file.txt\nsome test file\n'
+        done()
 
 
   # path.write
@@ -853,26 +918,33 @@ describe 'test Path', ->
     fs.unlinkSync testFile
     assert.equal text, testContent
 
-  describe 'async write', -> it 'should write file \'path.async.write.txt\'', (done) ->
+  describe 'async write should write file \'path.async.write.txt\'', ->
 
-    testFile = 'test/output/path.async.write.txt'
-    testContent = 'output by path.write test'
-    path = buildPath testFile
-    path.write testContent, done: (error) ->
-
-      if error? then return done error
-
-      fs.readFile testFile, encoding:'utf8', (error, text) ->
-
+    it 'with done option', (done) ->
+      testFile = 'test/output/path.async.write.txt'
+      testContent = 'output by path.write test'
+      path = buildPath testFile
+      path.write testContent, done: (error) ->
         if error? then return done error
-
-        fs.unlink testFile, (error) ->
-
+        fs.readFile testFile, encoding:'utf8', (error, text) ->
           if error? then return done error
+          fs.unlink testFile, (error) ->
+            if error? then return done error
+            assert.equal text, testContent
+            done()
 
-          assert.equal text, testContent
-
-          done()
+    it 'with done callback', (done) ->
+      testFile = 'test/output/path.async.write.txt'
+      testContent = 'output by path.write test'
+      path = buildPath testFile
+      path.write testContent, (error) ->
+        if error? then return done error
+        fs.readFile testFile, encoding:'utf8', (error, text) ->
+          if error? then return done error
+          fs.unlink testFile, (error) ->
+            if error? then return done error
+            assert.equal text, testContent
+            done()
 
 
   # path.append
@@ -887,20 +959,37 @@ describe 'test Path', ->
     fs.writeFileSync testFile, testPreexisting, encoding:'utf8'
     assert.equal text, testResult
 
-  describe 'async append', -> it 'should append file \'async.append.txt\'', (done) ->
-    testFile = 'test/output/async.append.txt'
-    testContent = 'output by path.append test'
-    testPreexisting = 'async append\n'
-    testResult  = testPreexisting + testContent
-    path = buildPath testFile
-    path.append testContent, done: (error) ->
-      if error? then return done error
-      fs.readFile testFile, encoding:'utf8', (error, text) ->
+  describe 'async append should append file \'async.append.txt\'', ->
+
+    it 'with done option', (done) ->
+      testFile = 'test/output/async.append.txt'
+      testContent = 'output by path.append test'
+      testPreexisting = 'async append\n'
+      testResult  = testPreexisting + testContent
+      path = buildPath testFile
+      path.append testContent, done: (error) ->
         if error? then return done error
-        fs.writeFile testFile, testPreexisting, encoding:'utf8', (error) ->
+        fs.readFile testFile, encoding:'utf8', (error, text) ->
           if error? then return done error
-          assert.equal text, testResult
-          done()
+          fs.writeFile testFile, testPreexisting, encoding:'utf8', (error) ->
+            if error? then return done error
+            assert.equal text, testResult
+            done()
+
+    it 'with done callback', (done) ->
+      testFile = 'test/output/async.append.txt'
+      testContent = 'output by path.append test'
+      testPreexisting = 'async append\n'
+      testResult  = testPreexisting + testContent
+      path = buildPath testFile
+      path.append testContent, (error) ->
+        if error? then return done error
+        fs.readFile testFile, encoding:'utf8', (error, text) ->
+          if error? then return done error
+          fs.writeFile testFile, testPreexisting, encoding:'utf8', (error) ->
+            if error? then return done error
+            assert.equal text, testResult
+            done()
 
 
   # path.pipe
@@ -924,6 +1013,16 @@ describe 'test Path', ->
         it 'should list all the project root paths', (done) ->
           path = buildPath()
           path.list done: (error, result) ->
+            if error? then return done error
+            for path in result.paths
+              assert (path.path in rootPaths), 'results shouldnt have |' + path.path + '|'
+            done()
+
+      describe 'with only `done` callback', ->
+
+        it 'should list all the project root paths', (done) ->
+          path = buildPath()
+          path.list (error, result) ->
             if error? then return done error
             for path in result.paths
               assert (path.path in rootPaths), 'results shouldnt have |' + path.path + '|'
@@ -1005,10 +1104,19 @@ describe 'test Path', ->
 
 
   # path.files
-  describe 'async files', ->
-    it 'should list all files in project root', (done) ->
+  describe 'async files should list all files in project root', ->
+
+    it '(with done option)', (done) ->
       path = buildPath()
       path.files done: (error, result) ->
+        if error? then return done error
+        for path in result.paths
+          assert (path.path in rootFiles), 'results shouldnt have |' + path.path + '|'
+        done()
+
+    it '(with done callback)', (done) ->
+      path = buildPath()
+      path.files (error, result) ->
         if error? then return done error
         for path in result.paths
           assert (path.path in rootFiles), 'results shouldnt have |' + path.path + '|'
@@ -1023,14 +1131,24 @@ describe 'test Path', ->
 
 
   # path.dirs
-  describe 'async dirs', ->
-    it 'should list all dirs in project root', (done) ->
+  describe 'async dirs should list all dirs in project root', ->
+
+    it '(with done option)', (done) ->
       path = buildPath()
       path.dirs done: (error, result) ->
         if error? then return done error
         for path in result.paths
           assert (path.path in rootDirs), 'results shouldnt have |' + path.path + '|'
         done()
+
+    it '(with done callback)', (done) ->
+      path = buildPath()
+      path.dirs (error, result) ->
+        if error? then return done error
+        for path in result.paths
+          assert (path.path in rootDirs), 'results shouldnt have |' + path.path + '|'
+        done()
+
 
   describe 'sync dirs', ->
     it 'should list all dirs in project root', ->
