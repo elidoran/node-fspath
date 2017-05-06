@@ -2,7 +2,7 @@
 [![Build Status](https://travis-ci.org/elidoran/node-fspath.svg?branch=master)](https://travis-ci.org/elidoran/node-fspath)
 [![Dependency Status](https://gemnasium.com/elidoran/node-fspath.png)](https://gemnasium.com/elidoran/node-fspath)
 [![npm version](https://badge.fury.io/js/fspath.svg)](http://badge.fury.io/js/fspath)
-
+[![Coverage Status](https://coveralls.io/repos/github/elidoran/node-fspath/badge.svg?branch=master)](https://coveralls.io/github/elidoran/node-fspath?branch=master)
 
 Immutable Path object replaces using strings for paths. It provides some functionality from both `path` and `fs` core modules.
 
@@ -23,56 +23,109 @@ Some of the helpful capabilities:
 
 Many of Path's functions will operate asynchronously when a callback is provided; otherwise they operate synchronously.
 
-<table of contents, like cosmos-browserify>
-
 Note: Although this document is incomplete the library is fully functional and there are many tests.
+
 
 ## Install
 
 ```sh
-npm install paths --save
+npm install fspath --save
 ```
+
 
 ## Examples
 
-```coffeescript
-# get the class
-buildPath = require 'fspath'
+```javascript
+// get the builder
+var buildPath = require('fspath')
 
-dir = buildPath()          # creates a path to the current working directory
+// create a path to the current working directory
+var dir = buildPath()
 
-dir = buildPath 'some/app' # creates a path to specified relative path
+// create a path to specified relative path
+dir = buildPath('some/app')
 
-parentDir = dir.parent()
-# OR: parentDir = dir.to '..'
+// create a new path at parent path
+var parentDir = dir.parent()
+// OR: parentDir = dir.to('..')
 
-childDir = path.to 'child'
+// create a path beneath this one.
+// could be a file or a directory
+var child = dir.to('child')
 
-siblingDir = childDir.to '../sibling'
+// create a path relative to it
+var sibling = child.to('../sibling')
 
-{paths} = dir.list()
-# OR: dir.list (error, result) -> paths = result.paths
+var result = dir.list()
+// result.paths is an array with all the paths.
+// OR:
+dir.list({
+  done: function(error, result) {
+    var paths = result.paths
+    // do something...
+  }
+})
 
-file = dir.to 'some-file.txt'
-file.write 'some data'
-file.append '\nmore data'
-# OR:
-#  file.write 'some data', (error) ->
-#    if error? then # do something when error exists
-#    file.append '\nmore data', (error) -> # do something when error exists
+// a new path we know is a file
+var file = dir.to('some-file.txt')
+
+// write to it
+file.write('some data')
+
+// or append to it
+file.append('\nmore data')
+
+// OR:
+file.write('some data', function (error) {
+  if (error) {
+    // do something when error exists
+  }
+})
 
 content = file.read()
-console.log content # 'some data\nmore data'
+// content = 'some data\nmore data'
 
-source = dir.to 'a-source-file.txt'
-target = dir.to 'a-target-file.txt'
-source.pipe target  # calls reader() on source and writer() on target and pipes them
-# options object accepts options for both reader/writer and for adding events
+// create two paths
+var source = dir.to('a-source-file.txt')
+var target = dir.to('a-target-file.txt')
 
-# listen for the finish event:
-source.pipe target, events:writer:finish: -> # do something when target's writer stream is finished
-# or wrap that options object down onto separate lines if you like...
+// pipe the first into the second.
+// this requires `source` to be a real file,
+// and requires `target` *not* be a directory.
+source.pipe(target)
+// the above calls reader() on source,
+// and writer() on target, then pipes them.
+
+// or, provide an options object.
+// it accepts options for both reader/writer,
+// and for adding events to both streams.
+source.pipe(target, {
+  reader: { /* options to give source.reader() */ },
+  writer: { /* options to give to target.writer() */ },
+  events: {
+    reader: {
+      // events to add to reader
+      error: function(error) { }
+    },
+    writer: {
+      // events to add to writer
+      error: function(error) { }
+    }
+  }
+})
+
+// for example, listen for the writer's finish event:
+source.pipe(target, {
+  events: {
+    writer: {
+      finish: function() {
+        // do something when target's writer stream is finished
+      }
+    }
+  }
+})
 ```
+
 
 ## Immutable Path
 
@@ -92,85 +145,85 @@ It also allows that object to be the focus of managing streams it creates to the
 3. `isRelative`: true when the path doesn't start with a slash
 4. `isAbsolute`: true when the path starts with a slash
 
-### Functions
 
-#### stats([callback])
+### stats([callback])
 
-```coffeescript
-# sync (no callback) call returns the stats object provided by node's fs module
+```javascript
+// sync (no callback) call returns the stats object provided by node's fs module
 stats = path.stats()
 
-# async call provides the stats or an error object
-path.stats (error, stats) -> console.log error?.message ? stats
+// async call provides the stats or an error object
+path.stats(function(error, stats) {
+  // ...
+})
 ```
 
-#### isReal([callback])
+### isReal([callback])
 
-```coffeescript
-# sync (no callback) call returns true if the file/directory exists
+```javascript
+// sync (no callback) call returns true if the file/directory exists
 isReal = path.isReal()
 
-# async call provides true/false or an error object
-path.isReal (error, isReal) -> console.log error?.message ? isReal
+// async call provides true/false or an error object
+path.isReal(function(error, isReal) {
+  // ...
+})
 ```
 
-#### isFile([callback])
+### isFile([callback])
 
-```coffeescript
-# sync (no callback) call returns true if it exists and is a file
+```javascript
+// sync (no callback) call returns true if it exists and is a file
 isFile = path.isFile()
 
-# async call provides true/false or an error object
-path.isFile (error, isFile) -> console.log error?.message ? isFile
+// async call provides true/false or an error object
+path.isFile(function(error, isFile) {
+  // ...
+})
 ```
 
-#### isDir([callback])
+### isDir([callback])
 
-```coffeescript
-# sync (no callback) call returns true if it exists and is a directory
+```javascript
+// sync (no callback) call returns true if it exists and is a directory
 isDir = path.isDir()
 
-# async call provides true/false or an error object
-path.isDir (error, isDir) -> console.log error?.message ? isDir
+// async call provides true/false or an error object
+path.isDir(function(error, isDir) {
+  // ...
+})
 ```
 
-#### isCanonical([callback])
+### isCanonical([callback])
 
-```coffeescript
-# sync (no callback) call returns true if the path is normalized.
-isCanonical = path.isCanonical()
+```javascript
+// sync (no callback) call returns true if the path is normalized.
+var isCanonical = path.isCanonical()
 
-# async call provides true/false or an error object
-path.isCanonical (error, isCanonical) -> console.log error?.message ? isCanonical
+// async call provides true/false or an error object
+path.isCanonical(function(error, isCanonical) {
+  // ...
+})
 ```
 
-#### modified([callback])
-#### created([callback])
-#### accessed([callback])
+### modified([callback])
+### created([callback])
+### accessed([callback])
 
-#### basename()
+### basename()
+### filename()
+### extname()  or  extension()
+### dirname()
 
-Returns the last part of the path.
+### startsWith(string|fspath)
+### endsWith(string|fspath)
+### equals(string|regex|fspath)
 
-```coffeescript
-# some/path  returns  path
-# some/path/ returns  path
-```
-
-
-#### filename()
-#### extname()  or  extension()
-#### dirname()
-
-#### startsWith(string)
-#### endsWith(string)
-#### equals(string|regex|Path)
-
-#### normalize()
-#### relativeTo(string)
-#### resolve(string[, string]*)
-#### subpath(start, end)
-#### part(index)
+### normalize()
+### relativeTo(string)
+### resolve(string[, string]*)
+### subpath(start, end)
+### part(index)
 
 #### reset()
 #### refresh()
@@ -179,16 +232,16 @@ Returns the last part of the path.
 #### up(count)
 #### to(path)
 
-#### list(options, done)
-#### files(options, done)
-#### dirs(options, done)
+#### list(options|done)
+#### files(options|done)
+#### dirs(options|done)
 
-#### reader(options, done)
-#### read(options, done)
-#### writer(options, done)
-#### write(data, options, done)
-#### append(data, options, done)
+#### reader(options|done)
+#### read(options|done)
+#### writer(options|done)
+#### write(data, options|done)
+#### append(data, options|done)
 #### pipe(stream, options)
 
 
-### MIT License
+### [MIT License](LICENSE)
