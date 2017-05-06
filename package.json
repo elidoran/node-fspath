@@ -2,21 +2,22 @@
   "name": "fspath",
   "version": "0.14.0",
   "description": "Immutable Path combining path and fs operations",
-  "main": "lib",
+  "main": "lib/index.js",
+  "files": [
+    "lib/index.js"
+  ],
   "author": "Eli Doran <eli+npm@elidoran.com>",
   "license": "MIT",
   "scripts": {
-    "compile": "coffee --bare --compile lib",
+    "build": "coffee --bare --compile lib",
     "clean": "rm -rf lib/*.js",
-    "prepublish": "coffee --bare --compile lib",
-    "postpublish": "rm -rf lib/*.js",
-    "testrun": "mocha --compilers coffee:coffee-script/register --reporter spec --bail --check-leaks test/lib",
-    "test010": "nave use 0.10 npm run testrun",
-    "test012": "nave use 0.12 npm run testrun",
-    "test4": "nave use 4.2 npm run testrun",
-    "test5": "nave use 5.0 npm run testrun",
-    "test-all": "npm run test010 && npm run test012 && npm run test4 && npm run test5",
-    "test": "if [ -e $TRAVIS ]; then npm run test-all; else npm run testrun; fi"
+    "prepublish": "npm run build",
+    "postpublish": "npm run clean",
+    "test": "mocha --compilers coffee:coffee-script/register --reporter spec --bail --check-leaks test/lib",
+    "test4": "nave use 4.8.3 npm test",
+    "test6": "nave use 6.10.3 npm test",
+    "test7": "nave use 7.10.0 npm test",
+    "test-all": "npm run test4 && npm run test6 && npm run test7"
   },
   "repository": {
     "type": "git",
@@ -24,10 +25,10 @@
   },
   "bugs": "http://github.com/elidoran/node-fspath/issues",
   "devDependencies": {
-    "coffee-script": "^1.10.0",
-    "mocha": "^2.3.3",
-    "nave": "^0.5.3",
-    "strung": "^1.0.4"
+    "coffee-script": "^1.12.5",
+    "mocha": "^3.3.0",
+    "nave": "^2.2.3",
+    "strung": "^1.1.3"
   },
   "dependencies": {}
 }
