@@ -62,7 +62,7 @@ describe 'test Path', ->
     '.gitignore', '.npmignore', '.travis.yml', 'LICENSE', 'CHANGES.md',
     'README.md', 'package.json'
   ]
-  rootDirs = [ '.git', 'lib', 'test', 'node_modules' ]
+  rootDirs = [ '.git', 'lib', 'test', 'node_modules', 'build', 'coverage' ]
   rootPaths = [].concat(rootDirs).concat(rootFiles)
 
   # path.path
