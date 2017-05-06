@@ -1,66 +1,82 @@
 fs       = require 'fs'
 corepath = require 'path'
 
-hasRoot = /// ^(
-  \/           # *nix style root
-  | [a-zA-Z]\: # windows drive spec
-  | \\         # no drive spec, but, is absolute from current drive
-) ///
+isFile = (path) -> path.isFile()
+isDir  = (path) -> path.isDir()
 
 class Path
+
   constructor: (path) ->
+
     @_the = {}
+
     if path?
+
       if 'string' is typeof path
         @path = path
         @parts = path.split corepath.sep # split into array
+
       else if Array.isArray path
         @path = path.join corepath.sep
         @parts = path.slice() # copy array
+
       else
         throw new Error 'Path requires either string or array as `path` to constructor'
+
     else
       @path = '.'
       @parts = [ '.' ]
 
-    @isAbsolute = hasRoot.test @path
+    @isAbsolute = corepath.isAbsolute @path
     @isRelative = not @isAbsolute
 
+
   reset: ->
-    delete @_the
-    delete @_stats
     @_the = {}
+    @_stats = null
+
 
   stats: (done) ->
+
     if done?
+
       fs.stat @path, (error, stats) =>
         @_stats = stats
         # get rid of error if it's a 'path doesnt exist' error
         if error?.code is 'ENOENT' then error = null
         done error, stats
+
     else
       try
-        delete @_stats
+        @_stats = null
         @_stats = fs.statSync @path
       catch error
         # errno is 34 in node 0.10.*
         # errno is -2 in node 0.12.* and 4.* ... so, use 'code'
+        ### istanbul ignore else ###
         if error.code is 'ENOENT' then return
         else throw error
+
 
   refresh: (done) ->
     @reset()
     @stats done
 
+
   toString: -> @path
 
+
   _fromStats: (done, getter) ->
+
     if done? then @stats (error, stats) ->
+
+      ### istanbul ignore if ###
       if error?
-        if error.errno is 34 then done undefined, getter()
+        if error.code is 'ENOENT' then done null, getter stats
         else done error
+
       else
-        done undefined, getter stats
+        done null, getter stats
 
     else getter @stats()
 
@@ -76,9 +92,9 @@ class Path
   filename: -> @_the.filename  ? (@_the.filename  = corepath.basename @basename(), @extname())
   extname : -> @_the.extension ? (@_the.extension = corepath.extname @basename())
   dirname : -> @_the.dirname   ? (@_the.dirname   = corepath.basename corepath.dirname @path)
-  extension: @extname
 
   parent: -> @_the.parent ? (@_the.parent = @to '..')
+
 
   up: (count = 1) ->
     count = Math.max 1, Math.min 20, count
@@ -86,68 +102,127 @@ class Path
     add += corepath.sep + '..' for i in [1...count]
     @to add
 
-  startsWith: (path) -> if path?.length then @path[...path.length] is path.toString() else false
-  endsWith  : (path) -> if path?.length then @path[-path.length...] is path.toString() else false
+
+  startsWith: (arg) ->
+
+    path =
+      if typeof arg is 'string' then arg
+      else if typeof arg?.path is 'string' then arg.path
+
+    path? and path.length <= @path.length and
+      path.length > 0 and path is @path[...path.length]
+
+
+  endsWith: (arg) ->
+
+    path =
+      if typeof arg is 'string' then arg
+      else if typeof arg?.path is 'string' then arg.path
+
+    path? and path.length <= @path.length and
+      path.length > 0 and path is @path[-path.length...]
+
 
   equals: (value) -> # value: string, regex, Path
+
     if value?
+
       if 'string' is typeof value then @path is value
-      else if value instanceof RegExp then value.test @path
-      else if value instanceof Path then  @path is value.path
-      else throw new TypeError 'equals() requires either string, regex, or Path'
+
+      # instanceof RegExp, check for `test` function instead
+      else if 'function' is typeof value.test then value.test @path
+
+      # instanceof Path, check for `path` string property instead
+      else if 'string' is typeof value.path then @path is value.path
+
+      # could return false, but, I think you meant to provide the right
+      # type and something went wrong, so, let's return an error.
+      else error: 'equals() requires: string, regex, or Path'
+
     else false
 
-  _mustExist: (msg) ->
-    unless @isReal() then throw new Error "path must exist #{msg}"
 
-  _optionsAndDone: (options, done) ->
-    if not done?
-      if 'function' is typeof options
-        done = options
-        options = null
-      else if options?
-        if options.done?
-          done = options.done
-          delete options.done
-    return options:options, done:done
+  _createStream: (options, creator) ->
 
-  _createStream: (options, done, creator) ->
-    {options, done} = @_optionsAndDone options, done
-    if done?
-      process.nextTick =>
+    if options?.done?
+      path = @path
+      done = options.done
+      process.nextTick ->
         try
-          done undefined, creator @path, options
+          done null, creator path, options
         catch error
+          ### istanbul ignore next ###
           done error
-    else
-      creator @path, options
 
-  reader: (options, done) ->
-    @_mustExist 'to read from it'
-    @_createStream options, done, (path, options = {}) ->
+    else creator @path, options
+
+
+  reader: (arg) ->
+
+    options = if typeof arg is 'function' then done:arg else arg
+
+    unless @isFile()
+      error = error: 'reader() requires file'
+      if options?.done? then return options.done error
+      else return error
+
+    @_createStream options, (path, options) ->
       # passing `null` for options errors in node 0.12 and 4+.
-      # so, we'll ensure it's an object in the params
-      fs.createReadStream path, options
+      # so, we'll ensure it's an object
+      fs.createReadStream path, options ? {}
 
-  writer: (options, done) ->
-    @_createStream options, done, (path, options) ->
+
+  writer: (arg) ->
+
+    options = if typeof arg is 'function' then done:arg else arg
+
+    if @isDir()
+      error = error: 'writer() requires non-directory'
+      if options?.done? then return options.done error
+      else return error
+
+    @_createStream options, (path, options) ->
       fs.createWriteStream path, options
 
-  read: (options, done) ->
-    @_mustExist 'to read from it'
-    {options, done} = @_optionsAndDone options, done
-    fn = if done? then fs.readFile else fs.readFileSync
-    fn @path, options, done
 
-  write: (data, options, done) ->
-    {options, done} = @_optionsAndDone options, done
-    fn = if done? then fs.writeFile else fs.writeFileSync
-    fn @path, data, options, done
+  read: (arg) ->
 
-  append: (data, options, done) ->
-    {options, done} = @_optionsAndDone options, done
-    fn = if done? then fs.appendFile else fs.appendFileSync
-    fn @path, data, options, done
+    options = if typeof arg is 'function' then done:arg else arg
+
+    unless @isFile()
+      error = error: 'read() requires file'
+      if options?.done? then return options.done error
+      else return error
+
+    if options?.done? then fs.readFile @path, options, options.done
+    else fs.readFileSync @path, options
+
+
+  write: (data, arg) ->
+
+    options = if typeof arg is 'function' then done:arg else arg
+
+    if @isDir()
+      error = error: 'write() requires non-directory'
+      if options?.done? then return options.done error
+      else return error
+
+    if options?.done? then fs.writeFile @path, data, options, options.done
+    else fs.writeFileSync @path, data, options
+
+
+  append: (data, arg) ->
+
+    options = if typeof arg is 'function' then done:arg else arg
+
+    if @isDir()
+      error = error: 'append() requires non-directory'
+      if options?.done? then return options.done error
+      else return error
+
+    if options?.done? then fs.appendFile @path, data, options, options.done
+    else fs.appendFileSync @path, data, options
+
 
   # stream: the stream to pipe the file's content to, or a path (call path.writer())
   # options: options for creating the reader and adding events to the reader
@@ -155,92 +230,165 @@ class Path
   # options.writer: the options to pass to writer()
   # options.events: the event/listener pairs to register with the reader
   pipe: (pathOrStream, options) ->
+
+    # get a reader for *this* path
     reader = @reader options?.reader
-    reader.on event, listener for event,listener of options?.events?.reader
-    pathOrStream = pathOrStream.writer options?.writer if pathOrStream instanceof Path
-    pathOrStream.on event, listener for event,listener of options?.events?.writer
-    return reader.pipe pathOrStream
 
-  list: (options, done) ->
-    @_mustExist 'to list directory'
-    {options, done} = @_optionsAndDone options, done
-    done ?= options?.all
-    # TODO: allow a `returnType` option which has us store result in an object
-    #       instead of an array?
-    if done?
-      fs.readdir @path, (error, array) =>
-        if error? then return done error
-        done? undefined, @_processList options, done, array
-    else
-      array = fs.readdirSync @path
-      @_processList options, done, array
+    if reader.error? then return reader
 
-  _processList: (options, done, array) ->
+    if options?.events?.reader?
+      reader.on event, listener for event, listener of options.events.reader
+
+    # if target is a path then get a writer for it
+    writer =
+      if pathOrStream instanceof Path then pathOrStream.writer options?.writer
+      else pathOrStream
+
+    if writer.error? then return writer
+
+    if options?.events?.writer?
+      writer.on event, listener for event, listener of options.events.writer
+
+    # finally pipe together and return result for chaining further
+    return reader.pipe writer
+
+
+  list: (arg) ->
+
+    options = if typeof arg is 'function' then done:arg else arg
+
+    unless @isDir()
+      error = error: 'list() requires directory'
+      if options?.done? then return options.done error
+      else return error
+
+
+    if options?.done?
+      done = options.done
+      path = this
+      fs.readdir @path, (error, array) ->
+        ### istanbul ignore if ###
+        if error? then done error
+        else done null, path._processList options, array
+
+    else @_processList options, fs.readdirSync @path
+
+
+  _processList: (options, array) ->
+
     acceptString = options?.acceptString
     acceptPath   = options?.acceptPath
-    each   = options?.each
+    each         = options?.each
+
+    # store all the accepted paths
     paths = []
+
+    # count the rejected strings/paths
     rejectedStrings = rejectedPaths = 0
 
+    # check array with filters, report each, count rejects
     for string in array
+
+      # if there's no filter, or if the filter accepts
       if not acceptString? or acceptString string
+
         path = @to string
+
+        # if there's no filter, or if the filter accepts
         if not acceptPath? or acceptPath path
-          paths.push path
-          each? path:path
-        else
-          rejectedPaths++
-      else
-        rejectedStrings++
+
+          paths[paths.length] = path
+          # call each if it exists
+          each? {path}
+
+        else rejectedPaths++
+
+      else rejectedStrings++
 
     return paths:paths, rejected:{strings:rejectedStrings, paths:rejectedPaths}
 
-  files: (options, done) ->
-    {options, done} = @_optionsAndDone options, done
-    options ?= {}
-    options.acceptPath ?= (path) -> path.isFile()
-    @list options, done
 
-  dirs: (options, done) ->
-    {options, done} = @_optionsAndDone options, done
-    options ?= {}
-    options.acceptPath ?= (path) -> path.isDir()
-    @list options, done
+  files: (arg) ->
 
-  # TODO: expect this path to be a file and reference file by name
-  #file: (path) ->
-  # read stats
-  # ensure isFile() is true
+    options = if typeof arg is 'function' then done:arg else arg
 
-  # TODO: expect this path to be a directory and reference directory by name
-  #dir: (path) ->
-  # read stats
-  # ensure isDir() is true
+    if options?
+
+      # clone their options
+      options = Object.assign {}, options
+
+      # wrap their filter so we can use `isFile` first
+      if options.acceptPath?
+        theirFilter = options.acceptPath
+        options.acceptPath = (path) -> path.isFile() and theirFilter path
+
+      # they aren't filtering, so, use ours directly
+      else options.acceptPath = isFile
+
+    # supply our files filter
+    else options = acceptPath: isFile
+
+    @list options
+
+
+  dirs: (arg) ->
+
+    options = if typeof arg is 'function' then done:arg else arg
+
+    if options?
+
+      # clone their options
+      options = Object.assign {}, options
+
+      # wrap their filter so we can use `isDir` first
+      if options.acceptPath?
+        theirFilter = options.acceptPath
+        options.acceptPath = (path) -> path.isDir() and theirFilter path
+
+      # they aren't filtering, so, use ours directly
+      else options.acceptPath = isDir
+
+    # supply our files filter
+    else options = acceptPath: isDir
+
+    @list options
+
 
   to: (path) ->
-    unless path? then throw new Error 'must specify path to to()'
+
     if 'string' is typeof path
       newPath = corepath.join @path, path
-      if newPath is @path then return this else return new Path newPath
-    else if Array.isArray path
-      new Path @parts.slice().concat path
-    else throw new Error 'to(path) requires either a string or array of strings'
+      if newPath is @path then this else new Path newPath
+
+    else if Array.isArray path then new Path @parts.concat path
+
+    else error: 'to(path) requires either a string or array of strings'
+
 
   resolve: (path) ->
     path = corepath.resolve @path, path
     if path is @path then this else new Path path
 
-  relativeTo: (to) ->
-    path = corepath.relative @path, to
-    if path is @path then this else new Path path
+
+  relativeTo: (path) ->
+    path = corepath.relative @path, path
+    if path.length < 1 then return this else new Path path
+
 
   normalize: () ->
     normalized = corepath.normalize @path
     if normalized is @path then this else new Path normalized
 
+
   subpath: (start, end) -> new Path (if @path is '/' then '' else @parts[start...end])
 
+
   part: (index) -> @parts[index]
+
+
+# alias:
+Path::extension = Path::extname
+
 
 # Use these ways:
 #  1a. {Path} = require 'fspath'
