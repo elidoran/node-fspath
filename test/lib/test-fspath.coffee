@@ -81,6 +81,9 @@ describe 'test Path', ->
     ctorTest 'absolute', 'path'
     ctorTest 'absolute', 'parts'
 
+    it 'should error with invalid input', ->
+      assert.throws -> buildPath new Date
+
   # path.startsWith
   describe 'startsWith', ->
     path = buildPath tests.relative.path
@@ -89,6 +92,8 @@ describe 'test Path', ->
     it 'with empty string should return false',  -> assert.equal path.startsWith(''), false
     it 'with wrong string should return false',  -> assert.equal path.startsWith('some/wrong/path'), false
     it 'with correct string should return true', -> assert.equal path.startsWith(tests.relative.path), true
+    it 'with wrong string should return false',  -> assert.equal path.startsWith(buildPath('some/wrong/path')), false
+    it 'with correct string should return true', -> assert.equal path.startsWith(buildPath(tests.relative.path)), true
 
   # path.endsWith
   describe 'endsWith', ->
@@ -98,6 +103,8 @@ describe 'test Path', ->
     it 'with empty string should return false',  -> assert.equal path.endsWith(''), false
     it 'with wrong string should return false',  -> assert.equal path.endsWith('some/wrong/path'), false
     it 'with correct string should return true', -> assert.equal path.endsWith(tests.relative.path), true
+    it 'with wrong string should return false',  -> assert.equal path.endsWith(buildPath('some/wrong/path')), false
+    it 'with correct string should return true', -> assert.equal path.endsWith(buildPath(tests.relative.path)), true
 
 
   # path.equals(Path|string)
@@ -114,10 +121,12 @@ describe 'test Path', ->
     it 'with correct regex should return true',  -> assert.equal path1.equals(/some\/test\/string/), true
     it 'with matching Path should return true',  -> assert.equal path1.equals(path2), true
     it 'with different Path should return false',-> assert.equal path1.equals(path3), false
+    it 'with invalid arg should return error',   -> assert path1.equals(new Date)?.error,
 
 
   # path.isReal
   describe 'isReal', ->
+
     for pair in [
       ['.', true]
       ['./', true]
@@ -299,6 +308,14 @@ describe 'test Path', ->
 
   # path.resolve
   describe 'resolve', ->
+
+    it 'should return `this` when result is the same path', ->
+
+      path = buildPath().resolve 'test'
+      result = path.resolve 'lib/..'
+      assert.strictEqual result, path
+
+
     for path1,path2 of {
       '':'one/two'
       '.':'one/two'
@@ -356,7 +373,14 @@ describe 'test Path', ->
 
   # path.relativeTo
   describe 'relativeTo', ->
-    for path1,path2 of {
+
+    it 'should return `this` when result is the same path', ->
+
+      path = buildPath('test')
+      result = path.relativeTo 'test'
+      assert.strictEqual result, path
+
+    for path1, path2 of {
       '':'one/two'
       '.':'one/two'
       '..':'one/two'
@@ -561,7 +585,19 @@ describe 'test Path', ->
 
   # path.to
   describe 'to', ->
-    for path,to of {
+
+    it 'should accept path parts as an array', ->
+
+      path = buildPath().to ['test', 'helpers', 'file.txt']
+      assert path
+      assert.deepEqual path.parts, ['.', 'test', 'helpers', 'file.txt']
+
+    it 'should return an error for invalid arg', ->
+
+      result = buildPath().to new Date
+      assert result?.error, 'to(path) requires either a string or array of strings'
+
+    for path, to of {
       '':'../'
       '.':'../'
       '..':'../..'
@@ -784,6 +820,20 @@ describe 'test Path', ->
 
 
   # path.reader
+  describe 'reader should return error for non-file', ->
+
+    it 'async', (done) ->
+
+      buildPath().reader (error) ->
+        assert.equal error?.error, 'reader() requires file'
+        done()
+
+    it 'sync', ->
+
+      result = buildPath().reader()
+      assert.equal result?.error, 'reader() requires file'
+
+
   describe 'async reader should read file \'file.txt\'', ->
 
     it 'with done option', (done) ->
@@ -822,6 +872,20 @@ describe 'test Path', ->
 
 
   # path.writer
+  describe 'writer should return error for directory', ->
+
+    it 'async', (done) ->
+
+      buildPath().writer (error) ->
+        assert.equal error?.error, 'writer() requires non-directory'
+        done()
+
+    it 'sync', ->
+
+      result = buildPath().writer()
+      assert.equal result?.error, 'writer() requires non-directory'
+
+
   describe 'async writer should write file \'path.writer/.txt\'', ->
 
     it 'with done option', (done) ->
@@ -886,6 +950,20 @@ describe 'test Path', ->
 
 
   # path.read
+  describe 'read should return error for non-file', ->
+
+    it 'async', (done) ->
+
+      buildPath().read (error) ->
+        assert.equal error?.error, 'read() requires file'
+        done()
+
+    it 'sync', ->
+
+      result = buildPath().read()
+      assert.equal result?.error, 'read() requires file'
+
+
   describe 'sync read', -> it 'should read file \'file.txt\'', ->
     path = buildPath 'test/helpers/file.txt'
     text = path.read()
@@ -909,6 +987,20 @@ describe 'test Path', ->
 
 
   # path.write
+  describe 'write should return error for directory', ->
+
+    it '(async)', (done) ->
+
+      buildPath().write 'testing', (error) ->
+        assert.equal error?.error, 'write() requires non-directory'
+        done()
+
+    it '(sync)', ->
+
+      result = buildPath().write()
+      assert.equal result?.error, 'write() requires non-directory'
+
+
   describe 'sync write', -> it 'should write file \'path.sync.write.txt\'', ->
     testFile = 'test/output/path.sync.write.txt'
     testContent = 'output by path.write test'
@@ -948,6 +1040,20 @@ describe 'test Path', ->
 
 
   # path.append
+  describe 'append should return error for directory', ->
+
+    it '(async)', (done) ->
+
+      buildPath().append 'testing', (error) ->
+        assert.equal error?.error, 'append() requires non-directory'
+        done()
+
+    it '(sync)', ->
+
+      result = buildPath().append('testing')
+      assert.equal result?.error, 'append() requires non-directory'
+
+
   describe 'sync append', -> it 'should append file \'sync.append.txt\'', ->
     testFile = 'test/output/sync.append.txt'
     testContent = 'output by path.append test'
@@ -993,20 +1099,55 @@ describe 'test Path', ->
 
 
   # path.pipe
-  describe '.pipe()', -> it 'should send file contents to stream', (done) ->
-    target = strung()
-    target.on 'error', done
-    target.on 'finish', ->
-      assert.equal target.string, 'file.txt\nsome test file\n'
-      done()
-    path = buildPath 'test/helpers/file.txt'
-    path.pipe target
+  describe '.pipe()', ->
+
+    it 'should provide an error for non-file source', ->
+
+      result = buildPath().pipe()
+      assert.equal result.error, 'reader() requires file'
+
+    it 'should provide an error for directory target', ->
+
+      result = buildPath('package.json').pipe buildPath()
+      assert.equal result.error, 'writer() requires non-directory'
+
+    it 'should use events options', (done) ->
+
+      path = buildPath 'test/helpers/file.txt'
+      target = strung()
+
+      calledEnd = false
+      path.pipe target,
+        events:
+          reader:
+            error: done
+            end: -> calledEnd = true
+          writer:
+            error: done
+            finish: ->
+              assert.equal target.string, 'file.txt\nsome test file\n'
+              done()
+
+    it 'should send file contents to stream', (done) ->
+      target = strung()
+      target.on 'error', done
+      target.on 'finish', ->
+        assert.equal target.string, 'file.txt\nsome test file\n'
+        done()
+      path = buildPath 'test/helpers/file.txt'
+      path.pipe target
 
 
   # path.list: async/sync => options:accept/each/all/done
   describe 'list', ->
 
     describe 'async', ->
+
+      it 'should error when non-directory', (done) ->
+
+        buildPath('package.json').list (error) ->
+          assert.equal error?.error, 'list() requires directory'
+          done()
 
       describe 'with only `done` option', ->
 
@@ -1069,6 +1210,11 @@ describe 'test Path', ->
 
     describe 'sync', ->
 
+      it 'should error when non-directory', ->
+
+        result = buildPath('package.json').list()
+        assert.equal result?.error, 'list() requires directory'
+
       describe 'with no options', ->
 
         it 'should list all the project root paths', ->
@@ -1122,6 +1268,16 @@ describe 'test Path', ->
           assert (path.path in rootFiles), 'results shouldnt have |' + path.path + '|'
         done()
 
+    it 'even with a custom acceptPath filter', (done) ->
+      path = buildPath()
+      path.files
+        acceptPath: -> true
+        done: (error, result) ->
+          if error? then return done error
+          for path in result.paths
+            assert (path.path in rootFiles), 'results shouldnt have |' + path.path + '|'
+          done()
+
   describe 'sync files', ->
     it 'should list all files in project root', ->
       path = buildPath()
@@ -1148,6 +1304,16 @@ describe 'test Path', ->
         for path in result.paths
           assert (path.path in rootDirs), 'results shouldnt have |' + path.path + '|'
         done()
+
+    it 'even with a custom acceptPath filter', (done) ->
+      path = buildPath()
+      path.dirs
+        acceptPath: -> true
+        done: (error, result) ->
+          if error? then return done error
+          for path in result.paths
+            assert (path.path in rootDirs), 'results shouldnt have |' + path.path + '|'
+          done()
 
 
   describe 'sync dirs', ->
@@ -1186,3 +1352,42 @@ describe 'test Path', ->
       path._stats = testObject
       path.refresh()
       assert.notEqual path._stats, testObject, 'stats should have been replaced'
+
+  describe 'modified', ->
+
+    it 'async', (done) ->
+
+      buildPath().modified (error, mtime) ->
+        assert mtime instanceof Date
+        done()
+
+    it 'sync', ->
+
+      mtime = buildPath().modified()
+      assert mtime instanceof Date
+
+  describe 'created', ->
+
+    it 'async', (done) ->
+
+      buildPath().created (error, mtime) ->
+        assert mtime instanceof Date
+        done()
+
+    it 'sync', ->
+
+      mtime = buildPath().created()
+      assert mtime instanceof Date
+
+  describe 'accessed', ->
+
+    it 'async', (done) ->
+
+      buildPath().accessed (error, mtime) ->
+        assert mtime instanceof Date
+        done()
+
+    it 'sync', ->
+
+      mtime = buildPath().accessed()
+      assert mtime instanceof Date
