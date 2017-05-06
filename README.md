@@ -59,11 +59,9 @@ var sibling = child.to('../sibling')
 var result = dir.list()
 // result.paths is an array with all the paths.
 // OR:
-dir.list({
-  done: function(error, result) {
-    var paths = result.paths
-    // do something...
-  }
+dir.list(function(error, result) {
+  var paths = result.paths
+  // do something...
 })
 
 // a new path we know is a file
@@ -225,23 +223,23 @@ path.isCanonical(function(error, isCanonical) {
 ### subpath(start, end)
 ### part(index)
 
-#### reset()
-#### refresh()
+### reset()
+### refresh()
 
-#### parent()
-#### up(count)
-#### to(path)
+### parent()
+### up(count)
+### to(path)
 
-#### list(options|done)
-#### files(options|done)
-#### dirs(options|done)
+### list(options|done)
+### files(options|done)
+### dirs(options|done)
 
-#### reader(options|done)
-#### read(options|done)
-#### writer(options|done)
-#### write(data, options|done)
-#### append(data, options|done)
-#### pipe(stream, options)
+### reader(options|done)
+### read(options|done)
+### writer(options|done)
+### write(data, options|done)
+### append(data, options|done)
+### pipe(stream, options)
 
 
 ### [MIT License](LICENSE)
