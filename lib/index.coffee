@@ -365,8 +365,11 @@ class Path
     else error: 'to(path) requires either a string or array of strings'
 
 
-  resolve: (path) ->
-    path = corepath.resolve @path, path
+  resolve: ->
+    paths = new Array arguments.length + 1
+    paths[i + 1] = arguments[i] for i in [0 ... arguments.length]
+    paths[0] = @path
+    path = corepath.resolve.apply null, paths
     if path is @path then this else new Path path
 
 
