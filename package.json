@@ -1,6 +1,6 @@
 {
   "name": "fspath",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "Immutable Path combining path and fs operations for easy traversal and streaming",
   "keywords": [
     "path",
@@ -65,5 +65,4 @@
   "engines": {
     "node": ">=4"
   }
-
 }
